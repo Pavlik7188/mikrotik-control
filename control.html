@@ -24,170 +24,329 @@
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     text-align: center;
   }
-  .title { color: #e0e0e0; font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-  .subtitle { color: #666; font-size: 13px; margin-bottom: 32px; }
-  #setupScreen { display: block; }
-  #mainScreen  { display: none;  }
-  .input-label { color: #aaa; font-size: 13px; margin-bottom: 8px; display: block; text-align: left; }
+  .title    { color: #e0e0e0; font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .subtitle { color: #666;    font-size: 13px; margin-bottom: 28px; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .input-label { color: #aaa; font-size: 12px; margin-bottom: 6px; display: block; text-align: left; }
   .input-field {
     width: 100%; padding: 12px 16px;
     background: #0f3460; border: 1px solid #334;
     border-radius: 12px; color: #fff;
-    font-size: 13px; margin-bottom: 16px; outline: none;
+    font-size: 14px; margin-bottom: 14px; outline: none;
   }
   .input-field:focus { border-color: #4a90e2; }
+
   .status-circle {
     width: 80px; height: 80px; border-radius: 50%;
-    margin: 0 auto 32px;
+    margin: 0 auto 28px;
     display: flex; align-items: center; justify-content: center;
     font-size: 32px; transition: all 0.4s ease;
   }
-  .status-circle.on      { background: rgba(46,213,115,0.15); border: 3px solid #2ed573; }
-  .status-circle.off     { background: rgba(255,71,87,0.15);  border: 3px solid #ff4757; }
-  .status-circle.loading { background: rgba(255,165,0,0.15);  border: 3px solid orange;  }
+  .s-on      { background: rgba(46,213,115,0.15); border: 3px solid #2ed573; }
+  .s-off     { background: rgba(255,71,87,0.15);  border: 3px solid #ff4757; }
+  .s-kids    { background: rgba(155,89,182,0.15); border: 3px solid #9b59b6; }
+  .s-loading { background: rgba(255,165,0,0.15);  border: 3px solid orange;  }
+
   .btn {
-    width: 100%; padding: 16px; border: none;
-    border-radius: 14px; font-size: 16px; font-weight: 600;
-    cursor: pointer; margin-bottom: 12px; transition: all 0.2s ease;
+    width: 100%; padding: 15px; border: none;
+    border-radius: 14px; font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-bottom: 10px; transition: all 0.2s;
   }
   .btn:active   { transform: scale(0.97); }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-on    { background: linear-gradient(135deg, #2ed573, #1abc9c); color: #fff; }
-  .btn-off   { background: linear-gradient(135deg, #ff4757, #c0392b); color: #fff; }
-  .btn-setup { background: linear-gradient(135deg, #4a90e2, #2471d4); color: #fff; }
-  .status-text { color: #aaa; font-size: 14px; margin-top: 16px; min-height: 20px; }
-  .status-text.success { color: #2ed573; }
-  .status-text.error   { color: #ff4757; }
-  .reset-link { color: #444; font-size: 12px; margin-top: 20px; cursor: pointer; text-decoration: underline; display: block; }
-  .reset-link:hover { color: #666; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; filter: grayscale(1); }
+  .btn-on    { background: linear-gradient(135deg,#2ed573,#1abc9c); color:#fff; }
+  .btn-off   { background: linear-gradient(135deg,#ff4757,#c0392b); color:#fff; }
+  .btn-kids  { background: linear-gradient(135deg,#9b59b6,#6c3483); color:#fff; }
+  .btn-kids.active-kids { background: linear-gradient(135deg,#f39c12,#e67e22); }
+  .btn-blue  { background: linear-gradient(135deg,#4a90e2,#2471d4); color:#fff; }
+  .btn-gray  { background: #2a2a4a; color:#aaa; font-size:13px; padding:10px; }
+
+  .msg { font-size: 13px; margin-top: 14px; min-height: 18px; color: #aaa; }
+  .msg.ok   { color: #2ed573; }
+  .msg.err  { color: #ff4757; }
+  .msg.kids { color: #9b59b6; }
+
+  .kids-info {
+    background: rgba(155,89,182,0.1);
+    border: 1px solid rgba(155,89,182,0.3);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #9b59b6;
+    display: none;
+  }
+  .kids-info.show { display: block; }
+
+  .time-badge {
+    display: inline-block;
+    background: #0f3460;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 16px;
+  }
+
+  .small-link { color: #444; font-size: 11px; margin-top: 10px; cursor: pointer; text-decoration: underline; display: block; }
+  .small-link:hover { color: #666; }
+  .divider { border: none; border-top: 1px solid #2a2a4a; margin: 14px 0; }
 </style>
 </head>
 <body>
 <div class="card">
   <div class="title">🌐 MikroTik</div>
-  <div class="subtitle">Управление интернетом</div>
+  <div class="subtitle" id="cardSubtitle">Управление интернетом</div>
 
-  <div id="setupScreen">
-    <label class="input-label">GitHub Personal Access Token:</label>
-    <input class="input-field" type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxx">
-    <button class="btn btn-setup" onclick="saveToken()">💾 Сохранить и войти</button>
-    <div class="status-text error" id="setupError"></div>
+  <!-- Экран входа -->
+  <div class="screen" id="loginScreen">
+    <label class="input-label">Пароль:</label>
+    <input class="input-field" type="password" id="loginPass" placeholder="Введи пароль" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn btn-blue" onclick="login()">🔓 Войти</button>
+    <div class="msg err" id="loginErr"></div>
+    <hr class="divider">
+    <button class="btn btn-gray" onclick="showSetup()">⚙️ Первая настройка</button>
   </div>
 
-  <div id="mainScreen">
-    <div class="status-circle loading" id="circle">⏳</div>
-    <button class="btn btn-on"  id="btnOn"  onclick="sendCmd('on')" >✅ ВКЛЮЧИТЬ</button>
-    <button class="btn btn-off" id="btnOff" onclick="sendCmd('off')">❌ ВЫКЛЮЧИТЬ</button>
-    <div class="status-text" id="statusText">Загрузка...</div>
-    <span class="reset-link" onclick="resetToken()">Сменить токен</span>
+  <!-- Экран настройки -->
+  <div class="screen" id="setupScreen">
+    <label class="input-label">GitHub Personal Access Token:</label>
+    <input class="input-field" type="password" id="setupToken" placeholder="ghp_xxxxxxxxxxxxxxxxxx">
+    <label class="input-label">Придумай пароль для входа:</label>
+    <input class="input-field" type="password" id="setupPass" placeholder="Минимум 4 символа">
+    <label class="input-label">Повтори пароль:</label>
+    <input class="input-field" type="password" id="setupPass2" placeholder="Повтори пароль">
+    <button class="btn btn-blue" onclick="setup()">💾 Сохранить</button>
+    <div class="msg err" id="setupErr"></div>
+    <span class="small-link" onclick="showLogin()">← Назад</span>
+  </div>
+
+  <!-- Основной экран -->
+  <div class="screen" id="mainScreen">
+    <div class="time-badge" id="timeBadge">⏰ --:--</div>
+    <div class="status-circle s-loading" id="circle">⏳</div>
+
+    <div class="kids-info" id="kidsInfo">
+      🌙 Блокировка: 23:00 – 07:00<br>
+      ☀️ Доступ: 07:00 – 23:00
+    </div>
+
+    <button class="btn btn-on"   id="btnOn"   onclick="sendCmd('on')" >✅ ВКЛЮЧИТЬ</button>
+    <button class="btn btn-off"  id="btnOff"  onclick="sendCmd('off')">❌ ВЫКЛЮЧИТЬ</button>
+    <button class="btn btn-kids" id="btnKids" onclick="toggleKids()"  >👨‍👩‍👧 Детский контроль</button>
+
+    <div class="msg" id="mainMsg">Загрузка...</div>
+    <span class="small-link" onclick="logout()">🔒 Выйти</span>
+    <span class="small-link" onclick="showSetup()">Сменить токен / пароль</span>
   </div>
 </div>
 
 <script>
-  const OWNER = 'Pavlik7188';
-  const REPO  = 'mikrotik-control';
-  const FILE  = 'cmd.txt';
-  const API   = 'https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + FILE;
+const OWNER = 'Pavlik7188';
+const REPO  = 'mikrotik-control';
+const FILE  = 'cmd.txt';
+const API   = 'https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+FILE;
 
-  var TOKEN = '';
-  var currentSha = '';
+var TOKEN = '';
+var SHA   = '';
+var currentCmd = '';
 
-  function init() {
-    var saved = localStorage.getItem('gh_token');
-    if (saved) { TOKEN = saved; showMain(); getStatus(); }
-  }
+// ---- Шифрование ----
+async function getKey(password, salt) {
+  var enc = new TextEncoder();
+  var km  = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt:salt, iterations:100000, hash:'SHA-256'},
+    km, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
+  );
+}
+async function encrypt(text, password) {
+  var enc  = new TextEncoder();
+  var salt = crypto.getRandomValues(new Uint8Array(16));
+  var iv   = crypto.getRandomValues(new Uint8Array(12));
+  var key  = await getKey(password, salt);
+  var ct   = await crypto.subtle.encrypt({name:'AES-GCM',iv:iv}, key, enc.encode(text));
+  var buf  = new Uint8Array(salt.length + iv.length + ct.byteLength);
+  buf.set(salt,0); buf.set(iv,16); buf.set(new Uint8Array(ct),28);
+  return btoa(String.fromCharCode(...buf));
+}
+async function decrypt(b64, password) {
+  try {
+    var buf  = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
+    var salt = buf.slice(0,16), iv = buf.slice(16,28), ct = buf.slice(28);
+    var key  = await getKey(password, salt);
+    var pt   = await crypto.subtle.decrypt({name:'AES-GCM',iv:iv}, key, ct);
+    return new TextDecoder().decode(pt);
+  } catch(e) { return null; }
+}
 
-  function saveToken() {
-    var val = document.getElementById('tokenInput').value.trim();
-    if (!val) { document.getElementById('setupError').textContent = 'Введи токен!'; return; }
-    TOKEN = val;
-    localStorage.setItem('gh_token', val);
-    showMain();
-    getStatus();
-  }
+// ---- Время ----
+function updateClock() {
+  var now = new Date();
+  var h = String(now.getHours()).padStart(2,'0');
+  var m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('timeBadge').textContent = '⏰ ' + h + ':' + m;
+}
 
-  function resetToken() {
-    localStorage.removeItem('gh_token');
-    TOKEN = '';
-    document.getElementById('mainScreen').style.display = 'none';
-    document.getElementById('setupScreen').style.display = 'block';
-    document.getElementById('tokenInput').value = '';
-  }
+function isKidsBlockTime() {
+  var h = new Date().getHours();
+  return (h >= 23 || h < 7);
+}
 
-  function showMain() {
-    document.getElementById('setupScreen').style.display = 'none';
-    document.getElementById('mainScreen').style.display  = 'block';
-  }
+// ---- Навигация ----
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+function showLogin()  { document.getElementById('loginErr').textContent=''; document.getElementById('cardSubtitle').textContent='Введи пароль'; showScreen('loginScreen'); }
+function showSetup()  { document.getElementById('setupErr').textContent=''; document.getElementById('cardSubtitle').textContent='Первая настройка'; showScreen('setupScreen'); }
+function showMain()   { document.getElementById('cardSubtitle').textContent='Управление интернетом'; showScreen('mainScreen'); updateClock(); getStatus(); }
+function logout()     { TOKEN=''; showLogin(); }
 
-  function getStatus() {
-    fetch(API, { headers: { 'Authorization': 'token ' + TOKEN } })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        currentSha = data.sha;
-        var content = atob(data.content.replace(/\n/g,'')).trim();
-        updateUI(content);
-      })
-      .catch(function() {
-        document.getElementById('statusText').textContent = 'Ошибка соединения';
-      });
-  }
+// ---- Логин ----
+async function login() {
+  var pass = document.getElementById('loginPass').value;
+  var enc  = localStorage.getItem('enc_token');
+  if (!enc) { document.getElementById('loginErr').textContent='Сначала настрой токен'; return; }
+  var t = await decrypt(enc, pass);
+  if (!t) { document.getElementById('loginErr').textContent='❌ Неверный пароль!'; return; }
+  TOKEN = t;
+  document.getElementById('loginPass').value = '';
+  showMain();
+}
 
-  function updateUI(state) {
-    var circle = document.getElementById('circle');
-    var text   = document.getElementById('statusText');
-    if (state === 'on') {
-      circle.className = 'status-circle on';
-      circle.textContent = '✅';
-      text.textContent = 'Интернет включён';
-      text.className = 'status-text success';
+// ---- Настройка ----
+async function setup() {
+  var token = document.getElementById('setupToken').value.trim();
+  var pass  = document.getElementById('setupPass').value;
+  var pass2 = document.getElementById('setupPass2').value;
+  var err   = document.getElementById('setupErr');
+  if (!token)          { err.textContent='Введи токен!'; return; }
+  if (pass.length < 4) { err.textContent='Пароль минимум 4 символа!'; return; }
+  if (pass !== pass2)  { err.textContent='Пароли не совпадают!'; return; }
+  err.textContent = 'Сохраняю...';
+  var encrypted = await encrypt(token, pass);
+  localStorage.setItem('enc_token', encrypted);
+  TOKEN = token;
+  document.getElementById('setupToken').value = '';
+  document.getElementById('setupPass').value  = '';
+  document.getElementById('setupPass2').value = '';
+  showMain();
+}
+
+// ---- UI обновление ----
+function updateUI(state) {
+  var circle   = document.getElementById('circle');
+  var msg      = document.getElementById('mainMsg');
+  var btnOn    = document.getElementById('btnOn');
+  var btnOff   = document.getElementById('btnOff');
+  var btnKids  = document.getElementById('btnKids');
+  var kidsInfo = document.getElementById('kidsInfo');
+
+  currentCmd = state;
+
+  if (state === 'kids') {
+    // Детский контроль
+    kidsInfo.classList.add('show');
+    btnKids.classList.add('active-kids');
+    btnKids.textContent = '🔴 Детский контроль ВКЛ';
+    btnOn.disabled  = true;
+    btnOff.disabled = true;
+
+    if (isKidsBlockTime()) {
+      circle.className = 'status-circle s-off';
+      circle.textContent = '🌙';
+      msg.textContent = 'Детский контроль — ночная блокировка';
+      msg.className = 'msg kids';
     } else {
-      circle.className = 'status-circle off';
-      circle.textContent = '❌';
-      text.textContent = 'Интернет выключен';
-      text.className = 'status-text error';
+      circle.className = 'status-circle s-kids';
+      circle.textContent = '👨‍👩‍👧';
+      msg.textContent = 'Детский контроль включён';
+      msg.className = 'msg kids';
     }
+  } else if (state === 'on') {
+    kidsInfo.classList.remove('show');
+    btnKids.classList.remove('active-kids');
+    btnKids.textContent = '👨‍👩‍👧 Детский контроль';
+    btnOn.disabled  = false;
+    btnOff.disabled = false;
+    circle.className = 'status-circle s-on';
+    circle.textContent = '✅';
+    msg.textContent = 'Интернет включён';
+    msg.className = 'msg ok';
+  } else {
+    kidsInfo.classList.remove('show');
+    btnKids.classList.remove('active-kids');
+    btnKids.textContent = '👨‍👩‍👧 Детский контроль';
+    btnOn.disabled  = false;
+    btnOff.disabled = false;
+    circle.className = 'status-circle s-off';
+    circle.textContent = '❌';
+    msg.textContent = 'Интернет выключен';
+    msg.className = 'msg err';
   }
+}
 
-  function sendCmd(cmd) {
-    var btnOn  = document.getElementById('btnOn');
-    var btnOff = document.getElementById('btnOff');
-    var text   = document.getElementById('statusText');
-    var circle = document.getElementById('circle');
-
-    btnOn.disabled = btnOff.disabled = true;
-    circle.className = 'status-circle loading';
-    circle.textContent = '⏳';
-    text.className = 'status-text';
-    text.textContent = 'Отправка команды...';
-
-    fetch(API, {
-      method: 'PUT',
-      headers: { 'Authorization': 'token ' + TOKEN, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'set ' + cmd, content: btoa(cmd), sha: currentSha })
+// ---- GitHub ----
+function getStatus() {
+  fetch(API, {headers:{'Authorization':'token '+TOKEN}})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      SHA = d.sha;
+      var content = atob(d.content.replace(/\n/g,'')).trim();
+      updateUI(content);
     })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.content) {
-        currentSha = data.content.sha;
-        updateUI(cmd);
-        text.textContent = cmd === 'on' ? '✅ Включится через ~1 минуту' : '❌ Выключится через ~1 минуту';
-      } else {
-        text.className = 'status-text error';
-        text.textContent = 'Ошибка! Проверь токен.';
-        circle.className = 'status-circle loading';
-        circle.textContent = '⚠️';
-      }
-    })
-    .catch(function() {
-      text.className = 'status-text error';
-      text.textContent = 'Нет соединения с GitHub';
-    })
-    .finally(function() {
-      btnOn.disabled = btnOff.disabled = false;
+    .catch(function(){
+      document.getElementById('mainMsg').textContent='Ошибка соединения';
+      document.getElementById('mainMsg').className='msg err';
     });
-  }
+}
 
-  init();
+function sendCmd(cmd) {
+  var btnOn  = document.getElementById('btnOn');
+  var btnOff = document.getElementById('btnOff');
+  var btnKids= document.getElementById('btnKids');
+  var msg    = document.getElementById('mainMsg');
+  var circle = document.getElementById('circle');
+  btnOn.disabled=btnOff.disabled=btnKids.disabled=true;
+  circle.className='status-circle s-loading'; circle.textContent='⏳';
+  msg.textContent='Отправка...'; msg.className='msg';
+  fetch(API, {
+    method:'PUT',
+    headers:{'Authorization':'token '+TOKEN,'Content-Type':'application/json'},
+    body:JSON.stringify({message:'set '+cmd, content:btoa(cmd), sha:SHA})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.content) {
+      SHA = d.content.sha;
+      updateUI(cmd);
+      if (cmd==='on')   msg.textContent='✅ Включится через ~1 минуту';
+      if (cmd==='off')  msg.textContent='❌ Выключится через ~1 минуту';
+      if (cmd==='kids') msg.textContent='👨‍👩‍👧 Детский контроль активирован';
+    } else {
+      msg.textContent='Ошибка! Проверь токен.'; msg.className='msg err';
+    }
+  })
+  .catch(function(){ msg.textContent='Нет соединения'; msg.className='msg err'; })
+  .finally(function(){ btnOn.disabled=btnOff.disabled=btnKids.disabled=false; });
+}
+
+function toggleKids() {
+  if (currentCmd === 'kids') {
+    sendCmd('on'); // Выключить детский контроль
+  } else {
+    sendCmd('kids'); // Включить детский контроль
+  }
+}
+
+// ---- Старт ----
+setInterval(updateClock, 30000);
+if (localStorage.getItem('enc_token')) { showLogin(); }
+else { showSetup(); }
 </script>
 </body>
 </html>
