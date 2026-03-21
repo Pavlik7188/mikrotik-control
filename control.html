@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MikroTik Control</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1a1a2e;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .card {
+    background: #16213e;
+    border-radius: 24px;
+    padding: 40px 32px;
+    width: 100%;
+    max-width: 320px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    text-align: center;
+  }
+  .title { color: #e0e0e0; font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 32px; }
+  #setupScreen { display: block; }
+  #mainScreen  { display: none;  }
+  .input-label { color: #aaa; font-size: 13px; margin-bottom: 8px; display: block; text-align: left; }
+  .input-field {
+    width: 100%; padding: 12px 16px;
+    background: #0f3460; border: 1px solid #334;
+    border-radius: 12px; color: #fff;
+    font-size: 13px; margin-bottom: 16px; outline: none;
+  }
+  .input-field:focus { border-color: #4a90e2; }
+  .status-circle {
+    width: 80px; height: 80px; border-radius: 50%;
+    margin: 0 auto 32px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; transition: all 0.4s ease;
+  }
+  .status-circle.on      { background: rgba(46,213,115,0.15); border: 3px solid #2ed573; }
+  .status-circle.off     { background: rgba(255,71,87,0.15);  border: 3px solid #ff4757; }
+  .status-circle.loading { background: rgba(255,165,0,0.15);  border: 3px solid orange;  }
+  .btn {
+    width: 100%; padding: 16px; border: none;
+    border-radius: 14px; font-size: 16px; font-weight: 600;
+    cursor: pointer; margin-bottom: 12px; transition: all 0.2s ease;
+  }
+  .btn:active   { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-on    { background: linear-gradient(135deg, #2ed573, #1abc9c); color: #fff; }
+  .btn-off   { background: linear-gradient(135deg, #ff4757, #c0392b); color: #fff; }
+  .btn-setup { background: linear-gradient(135deg, #4a90e2, #2471d4); color: #fff; }
+  .status-text { color: #aaa; font-size: 14px; margin-top: 16px; min-height: 20px; }
+  .status-text.success { color: #2ed573; }
+  .status-text.error   { color: #ff4757; }
+  .reset-link { color: #444; font-size: 12px; margin-top: 20px; cursor: pointer; text-decoration: underline; display: block; }
+  .reset-link:hover { color: #666; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="title">🌐 MikroTik</div>
+  <div class="subtitle">Управление интернетом</div>
+
+  <div id="setupScreen">
+    <label class="input-label">GitHub Personal Access Token:</label>
+    <input class="input-field" type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxx">
+    <button class="btn btn-setup" onclick="saveToken()">💾 Сохранить и войти</button>
+    <div class="status-text error" id="setupError"></div>
+  </div>
+
+  <div id="mainScreen">
+    <div class="status-circle loading" id="circle">⏳</div>
+    <button class="btn btn-on"  id="btnOn"  onclick="sendCmd('on')" >✅ ВКЛЮЧИТЬ</button>
+    <button class="btn btn-off" id="btnOff" onclick="sendCmd('off')">❌ ВЫКЛЮЧИТЬ</button>
+    <div class="status-text" id="statusText">Загрузка...</div>
+    <span class="reset-link" onclick="resetToken()">Сменить токен</span>
+  </div>
+</div>
+
+<script>
+  const OWNER = 'Pavlik7188';
+  const REPO  = 'mikrotik-control';
+  const FILE  = 'cmd.txt';
+  const API   = 'https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/' + FILE;
+
+  var TOKEN = '';
+  var currentSha = '';
+
+  function init() {
+    var saved = localStorage.getItem('gh_token');
+    if (saved) { TOKEN = saved; showMain(); getStatus(); }
+  }
+
+  function saveToken() {
+    var val = document.getElementById('tokenInput').value.trim();
+    if (!val) { document.getElementById('setupError').textContent = 'Введи токен!'; return; }
+    TOKEN = val;
+    localStorage.setItem('gh_token', val);
+    showMain();
+    getStatus();
+  }
+
+  function resetToken() {
+    localStorage.removeItem('gh_token');
+    TOKEN = '';
+    document.getElementById('mainScreen').style.display = 'none';
+    document.getElementById('setupScreen').style.display = 'block';
+    document.getElementById('tokenInput').value = '';
+  }
+
+  function showMain() {
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('mainScreen').style.display  = 'block';
+  }
+
+  function getStatus() {
+    fetch(API, { headers: { 'Authorization': 'token ' + TOKEN } })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        currentSha = data.sha;
+        var content = atob(data.content.replace(/\n/g,'')).trim();
+        updateUI(content);
+      })
+      .catch(function() {
+        document.getElementById('statusText').textContent = 'Ошибка соединения';
+      });
+  }
+
+  function updateUI(state) {
+    var circle = document.getElementById('circle');
+    var text   = document.getElementById('statusText');
+    if (state === 'on') {
+      circle.className = 'status-circle on';
+      circle.textContent = '✅';
+      text.textContent = 'Интернет включён';
+      text.className = 'status-text success';
+    } else {
+      circle.className = 'status-circle off';
+      circle.textContent = '❌';
+      text.textContent = 'Интернет выключен';
+      text.className = 'status-text error';
+    }
+  }
+
+  function sendCmd(cmd) {
+    var btnOn  = document.getElementById('btnOn');
+    var btnOff = document.getElementById('btnOff');
+    var text   = document.getElementById('statusText');
+    var circle = document.getElementById('circle');
+
+    btnOn.disabled = btnOff.disabled = true;
+    circle.className = 'status-circle loading';
+    circle.textContent = '⏳';
+    text.className = 'status-text';
+    text.textContent = 'Отправка команды...';
+
+    fetch(API, {
+      method: 'PUT',
+      headers: { 'Authorization': 'token ' + TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'set ' + cmd, content: btoa(cmd), sha: currentSha })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.content) {
+        currentSha = data.content.sha;
+        updateUI(cmd);
+        text.textContent = cmd === 'on' ? '✅ Включится через ~1 минуту' : '❌ Выключится через ~1 минуту';
+      } else {
+        text.className = 'status-text error';
+        text.textContent = 'Ошибка! Проверь токен.';
+        circle.className = 'status-circle loading';
+        circle.textContent = '⚠️';
+      }
+    })
+    .catch(function() {
+      text.className = 'status-text error';
+      text.textContent = 'Нет соединения с GitHub';
+    })
+    .finally(function() {
+      btnOn.disabled = btnOff.disabled = false;
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>
